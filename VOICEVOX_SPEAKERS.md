@@ -6,36 +6,47 @@ This document lists the VOICEVOX style IDs referenced by TTS Speaker and explain
 
 **Important:** IDs are **style IDs** (`styles[].id`), not character IDs. The styles exposed by `GET /speakers` depend on your installed VOICEVOX Engine, its available voice libraries, and any additional voice packages. The local `/speakers` endpoint is the source of truth for your installation.
 
-## Styles included in TTS Speaker's built-in voice definitions
+## Current voice configuration
 
-These definitions are included in `src/tts/config.ts`. They are available to voice selection by default, provided the corresponding styles exist in your VOICEVOX Engine.
+TTS Speaker stores voice configuration outside `openclaw.json`:
 
-| Style ID | Character | Style | Purpose |
-| ---: | --- | --- | --- |
-| `1` | ずんだもん (Zundamon) | あまあま | Sweet, gentle, affectionate |
-| `3` | ずんだもん (Zundamon) | ノーマル | Default/ordinary conversation |
-| `5` | ずんだもん (Zundamon) | セクシー | Confident, mature, playful delivery |
-| `7` | ずんだもん (Zundamon) | ツンツン | Tsundere, prickly, teasing |
-| `22` | ずんだもん (Zundamon) | ささやき | Whispering, quiet delivery |
-| `38` | ずんだもん (Zundamon) | ヒソヒソ | Very quiet, hushed delivery |
-| `75` | ずんだもん (Zundamon) | ヘロヘロ | Weak, exhausted delivery |
-| `76` | ずんだもん (Zundamon) | なみだめ | Teary, emotionally vulnerable delivery |
+```text
+%USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
+```
 
-The built-in default and emergency fallback style IDs are both `3` unless overridden in the OpenClaw plugin configuration.
+The file is created automatically when the plugin initializes if it does not exist.
 
-## Additional voice examples
+Current default voice definitions:
 
-The following styles were used as additional voice definitions in one tested setup. They are **not included in the plugin's built-in voice list**. Add them to `additionalVoices` only if the same style IDs are present in your own Engine.
+| Style ID | Description | Role |
+| ---: | --- | --- |
+| `102` | Normal voice for ordinary conversation. | Default |
+| `103` | Sweet, affectionate, soft, gentle emotional tone. | Optional |
+| `104` | Sad, sorrowful, disappointed, sympathetic emotional tone. | Optional |
+| `105` | Quiet, intimate, whispering emotional tone. | Optional |
+| `106` | Special voice for special occasions, such as birthdays. | Optional |
+| `3` | VOICEVOX fallback style. | Fallback |
 
-| Style ID | Character | Style | Suggested kind |
-| ---: | --- | --- | --- |
-| `102` | ユーレイちゃん (Yurei-chan) | ノーマル | `normal` |
-| `103` | ユーレイちゃん (Yurei-chan) | 甘々 | `emotion` |
-| `104` | ユーレイちゃん (Yurei-chan) | 哀しみ | `emotion` |
-| `105` | ユーレイちゃん (Yurei-chan) | ささやき | `emotion` |
-| `106` | ユーレイちゃん (Yurei-chan) | ツクモちゃん | `special` |
+The default configuration is:
 
-These IDs are installation-dependent examples, not a promise that every VOICEVOX distribution includes them.
+```json
+{
+  "defaultSpeakerId": 102,
+  "fallbackSpeakerId": 3,
+  "voices": [
+    { "id": 102, "description": "Normal voice for ordinary conversation." },
+    { "id": 103, "description": "Sweet, affectionate, soft, gentle emotional tone." },
+    { "id": 104, "description": "Sad, sorrowful, disappointed, sympathetic emotional tone." },
+    { "id": 105, "description": "Quiet, intimate, whispering emotional tone." },
+    { "id": 106, "description": "Special voice for special occasions, such as birthdays." }
+  ]
+}
+```
+
+These style IDs are examples from the current TTS Speaker configuration and may not exist in every VOICEVOX installation. Verify them against your local Engine before changing `voices.json`.
+
+The `voices` descriptions are intentionally generic. They describe the intended speaking style rather than exposing character names to the assistant.
+
 
 ## List every style available in your local Engine
 
@@ -70,23 +81,18 @@ $styleList |
 
 If your Engine uses a different port, update `$baseUrl`.
 
-## Add a style to TTS Speaker
+## Change the default or available voices
 
-Add a definition under `plugins.entries.tts-speaker.config.additionalVoices` in your OpenClaw configuration:
+Edit:
 
-```json
-{
-  "id": 103,
-  "key": "example-sweet",
-  "label": "Example Voice — Sweet",
-  "description": "A soft, affectionate delivery.",
-  "kind": "emotion"
-}
+```text
+%USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
 ```
 
-Replace the example values with a style ID and details from your own `/speakers` result. Supported `kind` values are `normal`, `emotion`, and `special`.
+Only styles that exist in your local VOICEVOX Engine can actually be synthesized.
 
-In an assistant response, the directive `[[tts:speakerVoiceId=103]]` selects style ID `103`. If no valid directive is present, TTS Speaker uses the configured default style.
+Do **not** add voice definitions to `openclaw.json`. The old `additionalVoices` configuration is no longer used.
+
 
 ---
 
@@ -96,36 +102,47 @@ In an assistant response, the directive `[[tts:speakerVoiceId=103]]` selects sty
 
 **重要：** ここで示す ID はキャラクター ID ではなく、`styles[].id` にあたる **スタイル ID** です。`GET /speakers` で取得できるスタイルは、インストールされている VOICEVOX Engine、利用可能な音声ライブラリ、追加音声パッケージによって異なります。実際に使用できるかどうかは、ローカルの `/speakers` の結果で確認してください。
 
-## TTS Speaker に組み込まれているスタイル
+## 現在の音声設定
 
-以下は `src/tts/config.ts` に組み込まれている音声定義です。使用中の VOICEVOX Engine に該当スタイルが存在すれば、追加設定なしで音声選択に使用できます。
+TTS Speaker の音声設定は `openclaw.json` ではなく、次のファイルに保存されます。
 
-| スタイル ID | キャラクター | スタイル | 用途 |
-| ---: | --- | --- | --- |
-| `1` | ずんだもん | あまあま | 甘く、やさしい話し方 |
-| `3` | ずんだもん | ノーマル | 通常会話・デフォルト |
-| `5` | ずんだもん | セクシー | 大人っぽく、自信のある話し方 |
-| `7` | ずんだもん | ツンツン | ツンデレ、挑発的な話し方 |
-| `22` | ずんだもん | ささやき | 静かなささやき声 |
-| `38` | ずんだもん | ヒソヒソ | とても小さな声、ひそひそ話 |
-| `75` | ずんだもん | ヘロヘロ | 疲れ切った、弱々しい話し方 |
-| `76` | ずんだもん | なみだめ | 涙ぐんだ、感情的な話し方 |
+```text
+%USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
+```
 
-OpenClaw の設定で変更しない限り、デフォルト音声と最終フォールバック音声はどちらも `3` です。
+ファイルが存在しない場合は、プラグイン初期化時に自動的に作成されます。
 
-## 追加音声の例
+現在のデフォルト設定：
 
-以下は、ある動作確認環境で追加音声として設定したスタイルです。**プラグイン組み込みの音声一覧には含まれていません。** 使用中の Engine で同じスタイル ID を確認できた場合のみ、`additionalVoices` に追加してください。
+| スタイル ID | 説明 | 役割 |
+| ---: | --- | --- |
+| `102` | 通常会話向けの通常音声。 | デフォルト |
+| `103` | 甘く、やさしく、親しみのある感情的な話し方。 | 任意 |
+| `104` | 悲しみ、落胆、同情などの感情的な話し方。 | 任意 |
+| `105` | 静かで親密な、ささやくような話し方。 | 任意 |
+| `106` | 誕生日など、特別な場面向けの音声。 | 任意 |
+| `3` | VOICEVOX のフォールバック用スタイル。 | フォールバック |
 
-| スタイル ID | キャラクター | スタイル | 推奨 kind |
-| ---: | --- | --- | --- |
-| `102` | ユーレイちゃん | ノーマル | `normal` |
-| `103` | ユーレイちゃん | 甘々 | `emotion` |
-| `104` | ユーレイちゃん | 哀しみ | `emotion` |
-| `105` | ユーレイちゃん | ささやき | `emotion` |
-| `106` | ユーレイちゃん | ツクモちゃん | `special` |
+デフォルト音声とフォールバック音声は次のように設定します。
 
-これらの ID は特定の環境での例であり、すべての VOICEVOX 配布版に含まれることを保証するものではありません。
+```json
+{
+  "defaultSpeakerId": 102,
+  "fallbackSpeakerId": 3,
+  "voices": [
+    { "id": 102, "description": "Normal voice for ordinary conversation." },
+    { "id": 103, "description": "Sweet, affectionate, soft, gentle emotional tone." },
+    { "id": 104, "description": "Sad, sorrowful, disappointed, sympathetic emotional tone." },
+    { "id": 105, "description": "Quiet, intimate, whispering emotional tone." },
+    { "id": 106, "description": "Special voice for special occasions, such as birthdays." }
+  ]
+}
+```
+
+これらのスタイル ID は現在の TTS Speaker 設定で使用している例であり、すべての VOICEVOX 環境に存在するとは限りません。変更する前に、使用中の Engine で確認してください。
+
+`voices` の説明は意図的に一般的な表現にしています。キャラクター名ではなく、読み上げる際の声質・感情・用途を表します。
+
 
 ## 使用中の Engine の全スタイルを一覧表示する
 
@@ -160,20 +177,15 @@ $styleList |
 
 Engine のポートを変更している場合は、`$baseUrl` を変更してください。
 
-## TTS Speaker にスタイルを追加する
+## デフォルト音声や利用可能な音声を変更する
 
-OpenClaw の設定にある `plugins.entries.tts-speaker.config.additionalVoices` に、次の形式で定義を追加します。
+次のファイルを編集します。
 
-```json
-{
-  "id": 103,
-  "key": "example-sweet",
-  "label": "Example Voice — Sweet",
-  "description": "A soft, affectionate delivery.",
-  "kind": "emotion"
-}
+```text
+%USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
 ```
 
-例の値を、使用中の `/speakers` の結果に合わせて置き換えてください。`kind` には `normal`、`emotion`、`special` を指定できます。
+使用中の VOICEVOX Engine に存在するスタイルだけが実際に音声合成できます。
 
-アシスタントの応答に `[[tts:speakerVoiceId=103]]` が含まれると、スタイル ID `103` が選択されます。有効なディレクティブがない場合は、設定されたデフォルト音声が使用されます。
+`openclaw.json` に音声定義を追加しないでください。以前の `additionalVoices` 設定は現在使用していません。
+
