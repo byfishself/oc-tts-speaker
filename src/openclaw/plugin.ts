@@ -56,6 +56,7 @@ const state =
     string,
     { text: string; timer: ReturnType<typeof setTimeout> }
     >(),
+    runAgentIds: new Map(),
     enqueueSentence: undefined,
   });
 
