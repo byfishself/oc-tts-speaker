@@ -95,45 +95,47 @@ Configure the plugin under `plugins.entries.tts-speaker` in your OpenClaw config
 
 ### Settings
 
-| Setting | Description |
-| --- | --- |
-| `defaultSpeakerId` | VOICEVOX style ID used for ordinary speech. |
-| `speedScale` | VOICEVOX speech speed multiplier. The built-in default is `1.0`. |
+The plugin's persistent runtime settings are stored separately from `openclaw.json`:
 
-Voice definitions and the fallback voice are managed separately in `voices.json`. They are not configured through `openclaw.json`.
+```text
+%USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\config.json
+```
 
-### Voice configuration file
+Example:
 
-When the plugin is activated, TTS Speaker creates the following file if it does not already exist:
+```json
+{
+  "enabled": true,
+  "agents": {
+    "main": {
+      "enabled": true,
+      "read": "all"
+    },
+    "coding": {
+      "enabled": false,
+      "read": "off"
+    }
+  },
+  "speedScale": 1.2
+}
+```
+
+- `enabled`: master TTS switch.
+- `agents`: per-agent TTS policy.
+- `agents.<agentId>.enabled`: whether that agent is spoken.
+- `agents.<agentId>.read`: `off`, `final`, or `all`.
+  - `off`: do not speak the agent.
+  - `final`: speak only the completed response.
+  - `all`: stream completed sentences into the playback queue while the response is generated.
+- `speedScale`: VOICEVOX speech speed multiplier.
+
+Voice selection is kept separately in `voices.json`:
 
 ```text
 %USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
 ```
 
-The file contains the fallback speaker ID and the available voice definitions. For example:
-
-```json
-{
-  "fallbackSpeakerId": 3,
-  "voices": [
-    {
-      "id": 102,
-      "description": "Normal voice for ordinary conversation."
-    },
-    {
-      "id": 103,
-      "description": "Sweet, affectionate, soft, gentle emotional tone."
-    }
-  ]
-}
-```
-
-Each voice definition requires a VOICEVOX style ID (`id`) and a non-empty description. Add or remove voice definitions directly in this file.
-
-The file is created during plugin initialization, not merely by linking or installing the extension. If you have just installed the plugin and the file is missing, make sure the plugin is enabled and activated. You do not need to open the settings UI to trigger file creation.
-
-An existing `voices.json` is left intact, so your custom voice definitions are not overwritten during normal initialization.
-
+`voices.json` contains `defaultSpeakerId`, `fallbackSpeakerId`, and the available voice definitions. These are not configured through `openclaw.json`.
 ## Voice selection
 
 For the built-in style IDs and instructions for listing every style available in your local Engine, see [VOICEVOX Speakers and Style IDs](VOICEVOX_SPEAKERS.md).
