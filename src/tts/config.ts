@@ -84,9 +84,10 @@ function isValidVoiceConfig(value: unknown): value is TtsVoiceConfig {
   const config = value as Partial<TtsVoiceConfig>;
 
   return (
-    typeof config.defaultSpeakerId === "number" &&
-    Number.isInteger(config.defaultSpeakerId) &&
-    config.defaultSpeakerId >= 0 &&
+    (config.defaultSpeakerId === undefined ||
+      (typeof config.defaultSpeakerId === "number" &&
+        Number.isInteger(config.defaultSpeakerId) &&
+        config.defaultSpeakerId >= 0)) &&
     typeof config.fallbackSpeakerId === "number" &&
     Number.isInteger(config.fallbackSpeakerId) &&
     config.fallbackSpeakerId >= 0 &&
@@ -105,7 +106,10 @@ export function resolveVoiceConfig(rawConfig: unknown): TtsVoiceConfig {
   }
 
   return {
-    defaultSpeakerId: rawConfig.defaultSpeakerId,
+    defaultSpeakerId:
+      typeof rawConfig.defaultSpeakerId === "number"
+        ? rawConfig.defaultSpeakerId
+        : DEFAULT_VOICE_CONFIG.defaultSpeakerId,
     fallbackSpeakerId: rawConfig.fallbackSpeakerId,
     voices: rawConfig.voices.map((voice) => ({ ...voice })),
   };
