@@ -71,7 +71,7 @@ If the extension is already linked, rebuild after source changes and reload the 
 
 ## Configuration
 
-Configure only plugin activation and required hook access in `openclaw.json`:
+The `openclaw.json` entry is intentionally minimal. TTS runtime settings are not stored in the OpenClaw plugin config.
 
 ```json
 {
@@ -79,24 +79,24 @@ Configure only plugin activation and required hook access in `openclaw.json`:
     "entries": {
       "tts-speaker": {
         "enabled": true,
-        "hooks": {
-          "allowConversationAccess": true
-        }
+        "config": {}
       }
     }
   }
 }
 ```
 
-TTS behavior is configured in the persistent `config.json` described below.
+Do **not** put `speedScale`, `defaultSpeakerId`, `fallbackSpeakerId`, `additionalVoices`, or other TTS runtime settings inside `plugins.entries.tts-speaker.config`.
 
-### Settings
+### Runtime settings
 
-The plugin's persistent runtime settings are stored separately from `openclaw.json`:
+Persistent TTS runtime settings are stored in:
 
 ```text
 %USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\config.json
 ```
+
+The file is created automatically when the plugin initializes if it does not already exist.
 
 Example:
 
@@ -104,7 +104,7 @@ Example:
 {
   "enabled": true,
   "agents": {
-    "main": {
+    "my-agent": {
       "enabled": true,
       "read": "all"
     },
@@ -126,13 +126,53 @@ Example:
   - `all`: stream completed sentences into the playback queue while the response is generated.
 - `speedScale`: VOICEVOX speech speed multiplier.
 
-Voice selection is kept separately in `voices.json`:
+Use the actual OpenClaw agent ID as `<agentId>`. You can find the IDs with:
+
+```powershell
+openclaw agents list
+```
+
+Only agents explicitly enabled in this file are spoken. Agents not listed in `agents` are not spoken.
+
+### Voice configuration
+
+Voice selection is stored separately in:
 
 ```text
 %USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
 ```
 
-`voices.json` contains `defaultSpeakerId`, `fallbackSpeakerId`, and the available voice definitions. These are not configured through `openclaw.json`.
+The file is created automatically when the plugin initializes if it does not exist.
+
+Example:
+
+```json
+{
+  "defaultSpeakerId": 102,
+  "fallbackSpeakerId": 3,
+  "voices": [
+    {
+      "id": 102,
+      "description": "Normal voice for ordinary conversation."
+    },
+    {
+      "id": 103,
+      "description": "Sweet, affectionate, soft, gentle emotional tone."
+    },
+    {
+      "id": 105,
+      "description": "Quiet, intimate, whispering emotional tone."
+    }
+  ]
+}
+```
+
+- `defaultSpeakerId`: default VOICEVOX style ID.
+- `fallbackSpeakerId`: fallback style ID used when the selected voice cannot be used.
+- `voices`: available voice definitions and their descriptions.
+
+These values are not configured through `openclaw.json`.
+
 ## Voice selection
 
 For the built-in style IDs and instructions for listing every style available in your local Engine, see [VOICEVOX Speakers and Style IDs](VOICEVOX_SPEAKERS.md).
