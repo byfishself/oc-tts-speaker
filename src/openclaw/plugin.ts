@@ -422,13 +422,25 @@ export default definePluginEntry({
       enqueueShared(speech.text, speech.speakerId);
     });
 
-    api.on("before_prompt_build", () => ({
-      appendSystemContext: buildVoiceInstructions(
-        voiceConfig.defaultSpeakerId,
-        voiceConfig.fallbackSpeakerId,
-        voices,
-      ),
-    }));
+    api.on("before_prompt_build", (_event, ctx) => {
+      const runId = (ctx as { runId?: string }).runId;
+      const agentId = (ctx as { agentId?: string }).agentId;
+
+      if (runId && agentId) {
+        runAgentIds.set(runId, agentId);
+      }
+
+      const agentConfig = getAgentConfig(agentId);
+      if (!agentConfig) return;
+
+      return {
+        appendSystemContext: buildVoiceInstructions(
+          voiceConfig.defaultSpeakerId,
+          voiceConfig.fallbackSpeakerId,
+          voices,
+        ),
+      };
+    });
 
     /*
      * Gateway bridge:
@@ -445,7 +457,8 @@ export default definePluginEntry({
         const runId = event.runId;
         if (!runId) return;
 
-
+        const agentConfig = getRunAgentConfig(runId);
+        if (!agentConfig || agentConfig.read !== "all") return;
 
         const text = typeof event.data.text === "string" ? event.data.text : "";
         const delta = typeof event.data.delta === "string" ? event.data.delta : "";
