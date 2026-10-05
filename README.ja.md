@@ -71,7 +71,7 @@ openclaw plugins install --link . --force
 
 ## 設定
 
-OpenClaw の設定にある `plugins.entries.tts-speaker` で設定します。設定ファイル全体を置き換えず、既存の設定に次の内容を統合してください。
+`openclaw.json` の TTS Speaker 設定は意図的に最小限になっています。TTS の実行設定は OpenClaw のプラグイン設定には保存しません。
 
 ```json
 {
@@ -79,41 +79,76 @@ OpenClaw の設定にある `plugins.entries.tts-speaker` で設定します。�
     "entries": {
       "tts-speaker": {
         "enabled": true,
-        "hooks": {
-          "allowConversationAccess": true
-        },
-        "config": {
-          "defaultSpeakerId": 3,
-          "fallbackSpeakerId": 3,
-          "speedScale": 1.0
-        }
+        "config": {}
       }
     }
   }
 }
 ```
 
-### 設定項目
+`plugins.entries.tts-speaker.config` に `speedScale`、`defaultSpeakerId`、`fallbackSpeakerId`、`additionalVoices`、その他の TTS 実行設定を入れないでください。
 
-| 項目 | 説明 |
-| --- | --- |
-| `defaultSpeakerId` | 通常の会話で使用する VOICEVOX のスタイル ID。 |
-| `speedScale` | VOICEVOX の読み上げ速度倍率。既定値は `1.0` です。 |
+### 実行設定
 
-音声定義とフォールバック音声は、`voices.json` で別途管理します。これらは `openclaw.json` には設定しません。
+永続的な TTS 実行設定は次のファイルに保存されます。
 
-### 音声設定ファイル
+```text
+%USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\config.json
+```
 
-プラグインの有効化時に、次のファイルがまだ存在しない場合は自動作成されます。
+このファイルは、プラグイン初期化時に存在しなければ自動的に作成されます。
+
+例：
+
+```json
+{
+  "enabled": true,
+  "agents": {
+    "my-agent": {
+      "enabled": true,
+      "read": "all"
+    },
+    "coding": {
+      "enabled": false,
+      "read": "off"
+    }
+  },
+  "speedScale": 1.2
+}
+```
+
+- `enabled`：TTS 全体の有効／無効。
+- `agents`：エージェントごとの TTS 設定。
+- `agents.<agentId>.enabled`：そのエージェントを読み上げるかどうか。
+- `agents.<agentId>.read`：`off`、`final`、`all` のいずれか。
+  - `off`：そのエージェントを読み上げない。
+  - `final`：完成した応答だけを読み上げる。
+  - `all`：応答生成中に完成した文をストリーミングして再生キューに追加する。
+- `speedScale`：VOICEVOX の読み上げ速度倍率。
+
+`<agentId>` には実際の OpenClaw エージェント ID を使用してください。ID は次のコマンドで確認できます。
+
+```powershell
+openclaw agents list
+```
+
+このファイルで明示的に有効化したエージェントだけが読み上げ対象になります。`agents` に記載されていないエージェントは読み上げられません。
+
+### 音声設定
+
+音声の選択設定は、次のファイルで別途管理します。
 
 ```text
 %USERPROFILE%\\.openclaw\\TTS Speaker\\tts-speaker\\voices.json
 ```
 
-このファイルには、フォールバック音声の ID と利用可能な音声定義を記述します。例えば：
+このファイルは、プラグイン初期化時に存在しなければ自動的に作成されます。
+
+例：
 
 ```json
 {
+  "defaultSpeakerId": 102,
   "fallbackSpeakerId": 3,
   "voices": [
     {
@@ -123,16 +158,20 @@ OpenClaw の設定にある `plugins.entries.tts-speaker` で設定します。�
     {
       "id": 103,
       "description": "Sweet, affectionate, soft, gentle emotional tone."
+    },
+    {
+      "id": 105,
+      "description": "Quiet, intimate, whispering emotional tone."
     }
   ]
 }
 ```
 
-各音声定義には VOICEVOX のスタイル ID（`id`）と空ではない説明（`description`）が必要です。音声の追加・削除は、このファイルを直接編集して行います。
+- `defaultSpeakerId`：通常使用する VOICEVOX のスタイル ID。
+- `fallbackSpeakerId`：選択した音声を使用できない場合のフォールバック用スタイル ID。
+- `voices`：利用可能な音声定義と、その説明。
 
-このファイルは拡張機能をリンク／インストールしただけではなく、プラグインの初期化時に作成されます。インストール後にファイルが見つからない場合は、プラグインが有効化され、初期化されていることを確認してください。ファイル作成のために設定 UI を開く必要はありません。
-
-既存の `voices.json` は通常の初期化時に上書きされないため、カスタム音声定義は保持されます。
+これらの値は `openclaw.json` では設定しません。
 
 ## 音声の選択
 
