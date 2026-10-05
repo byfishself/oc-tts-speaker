@@ -34,6 +34,7 @@ interface SharedTtsState {
     string,
     { text: string; timer: ReturnType<typeof setTimeout> }
   >;
+  runAgentIds: Map<string, string>;
   enqueueSentence?:
     | ((text: string, speakerId: number, runId?: string) => void)
     | undefined;
@@ -63,7 +64,37 @@ const {
   streamedRunIds,
   selectedSpeakersByRun,
   pendingRuns,
+  runAgentIds,
 } = state;
+
+function loadTtsConfig(stateDir: string) {
+  const dataDir = path.join(stateDir, "TTS Speaker", "tts-speaker");
+  const configPath = path.join(dataDir, "config.json");
+
+  fs.mkdirSync(dataDir, { recursive: true });
+
+  if (!fs.existsSync(configPath)) {
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify(DEFAULT_TTS_SPEAKER_CONFIG, null, 2) + "\n",
+      "utf8",
+    );
+    return resolveTtsSpeakerConfig(DEFAULT_TTS_SPEAKER_CONFIG);
+  }
+
+  try {
+    return resolveTtsSpeakerConfig(
+      JSON.parse(fs.readFileSync(configPath, "utf8")),
+    );
+  } catch (error) {
+    console.warn(
+      `[TTS Speaker] Failed to read config.json; using defaults: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return resolveTtsSpeakerConfig(DEFAULT_TTS_SPEAKER_CONFIG);
+  }
+}
 
 function loadVoiceConfig(stateDir: string) {
   const dataDir = path.join(stateDir, "TTS Speaker", "tts-speaker");
@@ -291,13 +322,10 @@ export default definePluginEntry({
   register(api) {
     const instanceId = Math.random().toString(36).slice(2, 8);
     console.log(`[TTS Speaker] register instance=${instanceId}`);
-    const config = resolveTtsSpeakerConfig(
-      api.pluginConfig ?? DEFAULT_TTS_SPEAKER_CONFIG,
-    );
+    const stateDir = api.runtime.state.resolveStateDir();
+    const config = loadTtsConfig(stateDir);
 
-  const voiceConfig = loadVoiceConfig(
-    api.runtime.state.resolveStateDir(),
-  );
+    const voiceConfig = loadVoiceConfig(stateDir);
 
   const voices = voiceConfig.voices;
 
@@ -306,7 +334,7 @@ export default definePluginEntry({
   );
 
     const provider = new VoicevoxProvider({
-      speaker: config.defaultSpeakerId,
+      speaker: voiceConfig.defaultSpeakerId,
       fallbackSpeaker: voiceConfig.fallbackSpeakerId,
       speedScale: config.speedScale,
     });
@@ -323,7 +351,7 @@ export default definePluginEntry({
         );
       const speech = extractSpeech(
         text,
-        config.defaultSpeakerId,
+        voiceConfig.defaultSpeakerId,
         voices,
         speakerId,
       );
@@ -337,6 +365,20 @@ export default definePluginEntry({
       });
     };
     state.enqueueSentence = enqueueSentence;
+
+    const getAgentConfig = (agentId: string | undefined) => {
+      if (!config.enabled || !agentId) return undefined;
+      const agentConfig = config.agents[agentId];
+      if (!agentConfig || !agentConfig.enabled || agentConfig.read === "off") {
+        return undefined;
+      }
+      return agentConfig;
+    };
+
+    const getRunAgentConfig = (runId: string | undefined) => {
+      if (!runId) return undefined;
+      return getAgentConfig(runAgentIds.get(runId));
+    };
 
     const enqueueShared = (text: string, speakerId: number, runId?: string,) => {
       const enqueue = state.enqueueSentence;
@@ -356,13 +398,16 @@ export default definePluginEntry({
       if (event.toolName !== "message") return;
       if (event.error) return;
 
+      const agentConfig = getRunAgentConfig(event.runId);
+      if (!agentConfig || agentConfig.read !== "all") return;
+
       const params = event.params;
       if (params.action !== "send") return;
       if (typeof params.message !== "string") return;
 
       const speech = extractSpeech(
         params.message,
-        config.defaultSpeakerId,
+        voiceConfig.defaultSpeakerId,
         voices,
       );
 
@@ -379,7 +424,7 @@ export default definePluginEntry({
 
     api.on("before_prompt_build", () => ({
       appendSystemContext: buildVoiceInstructions(
-        config.defaultSpeakerId,
+        voiceConfig.defaultSpeakerId,
         voiceConfig.fallbackSpeakerId,
         voices,
       ),
@@ -433,7 +478,7 @@ export default definePluginEntry({
           run = {
             snapshot: "",
             buffer: "",
-            speakerId: selectedSpeakersByRun.get(runId) ?? config.defaultSpeakerId,
+            speakerId: selectedSpeakersByRun.get(runId) ?? voiceConfig.defaultSpeakerId,
             received: false,
           };
           streamingRuns.set(runId, run);
@@ -474,6 +519,9 @@ export default definePluginEntry({
       const runId = event.runId;
       if (!runId) return;
 
+      const agentConfig = getRunAgentConfig(runId);
+      if (!agentConfig) return;
+
       const outputs: string[] = [];
       if (Array.isArray(event.assistantTexts)) outputs.push(...event.assistantTexts);
       if (typeof event.lastAssistant === "string") outputs.push(event.lastAssistant);
@@ -497,7 +545,7 @@ export default definePluginEntry({
               pendingRuns.delete(runId);
               const speech = extractSpeech(
                 pending.text,
-                config.defaultSpeakerId,
+                voiceConfig.defaultSpeakerId,
                 voices,
                 directiveSpeakerId,
               );
@@ -525,8 +573,25 @@ export default definePluginEntry({
       },
     });
 
-    api.on("agent_end", (event) => {
-      const runId = event.runId;
+    api.on("agent_end", (event, ctx) => {
+      const runId = event.runId ?? (ctx as { runId?: string }).runId;
+      const agentId =
+        (ctx as { agentId?: string }).agentId ??
+        (runId ? runAgentIds.get(runId) : undefined);
+
+      if (runId && agentId) runAgentIds.set(runId, agentId);
+
+      const agentConfig = getAgentConfig(agentId);
+      if (!agentConfig) {
+        if (runId) {
+          runAgentIds.delete(runId);
+          streamingRuns.delete(runId);
+          selectedSpeakersByRun.delete(runId);
+          streamedRunIds.delete(runId);
+        }
+        return;
+      }
+
       const streamRun = runId ? streamingRuns.get(runId) : undefined;
       const hadStreaming = runId ? streamedRunIds.has(runId) : false;
 
@@ -549,6 +614,7 @@ export default definePluginEntry({
         streamingRuns.delete(runId!);
         selectedSpeakersByRun.delete(runId!);
         streamedRunIds.delete(runId!);
+        runAgentIds.delete(runId!);
 
         const pending = pendingRuns.get(runId!);
         if (pending) {
@@ -570,12 +636,15 @@ export default definePluginEntry({
 
         const speech = extractSpeech(
           assistantText,
-          config.defaultSpeakerId,
+          voiceConfig.defaultSpeakerId,
           voices,
           selectedSpeakerId,
         );
 
-        if (runId) selectedSpeakersByRun.delete(runId);
+        if (runId) {
+          selectedSpeakersByRun.delete(runId);
+          runAgentIds.delete(runId);
+        }
 
         if (speech.text) {
           enqueueShared(speech.text, speech.speakerId, runId);
