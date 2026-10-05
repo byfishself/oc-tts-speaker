@@ -71,7 +71,7 @@ If the extension is already linked, rebuild after source changes and reload the 
 
 ## Configuration
 
-Configure the plugin under `plugins.entries.tts-speaker` in your OpenClaw configuration. Merge the following into your existing configuration rather than replacing the whole file:
+Configure only plugin activation and required hook access in `openclaw.json`:
 
 ```json
 {
@@ -81,17 +81,14 @@ Configure the plugin under `plugins.entries.tts-speaker` in your OpenClaw config
         "enabled": true,
         "hooks": {
           "allowConversationAccess": true
-        },
-        "config": {
-          "defaultSpeakerId": 3,
-          "fallbackSpeakerId": 3,
-          "speedScale": 1.0
         }
       }
     }
   }
 }
 ```
+
+TTS behavior is configured in the persistent `config.json` described below.
 
 ### Settings
 
