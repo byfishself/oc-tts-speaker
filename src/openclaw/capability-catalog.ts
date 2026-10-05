@@ -5,7 +5,7 @@ import {
 import { VoicevoxProvider } from "../tts/voicevox.js";
 
 const provider = new VoicevoxProvider({
-  speaker: DEFAULT_TTS_SPEAKER_CONFIG.defaultSpeakerId,
+  speaker: DEFAULT_VOICE_CONFIG.defaultSpeakerId,
   fallbackSpeaker: DEFAULT_VOICE_CONFIG.fallbackSpeakerId,
   speedScale: DEFAULT_TTS_SPEAKER_CONFIG.speedScale,
 });
