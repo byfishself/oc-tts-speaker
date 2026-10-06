@@ -12,7 +12,7 @@ async function main(): Promise<void> {
 
   const speaker = new TtsSpeaker({
     provider: new VoicevoxProvider({
-      speaker: 1,
+      fallbackSpeaker: 3,
     }),
   });
 
