@@ -174,7 +174,7 @@ function extractSpeakerDirective(
 
 function extractSpeech(
   text: string,
-  defaultSpeakerId: number,
+  fallbackSpeakerId: number,
   availableVoices: TtsVoiceDefinition[],
   preferredSpeakerId?: number,
 ): ExtractedSpeech {
@@ -184,7 +184,7 @@ function extractSpeech(
     preferredSpeakerId !== undefined &&
     allowedSpeakerIds.has(preferredSpeakerId)
       ? preferredSpeakerId
-      : defaultSpeakerId;
+      : fallbackSpeakerId;
 
   const cleanedText = text.replace(
     /\[\[tts:([^\]]*)\]\]/gi,
@@ -211,20 +211,17 @@ function extractSpeech(
 }
 
 function buildVoiceInstructions(
-  defaultSpeakerId: number,
   fallbackSpeakerId: number,
   voices: TtsVoiceDefinition[],
 ): string {
-  const defaultVoice = voices.find((voice) => voice.id === defaultSpeakerId);
   const selectableVoices = voices.filter(
-    (voice) =>
-      voice.id !== defaultSpeakerId && voice.id !== fallbackSpeakerId,
+    (voice) => voice.id !== fallbackSpeakerId,
   );
 
 const lines = [
   "Voice delivery is part of every assistant response.",
   "For every response, determine the most appropriate available voice.",
-  "Use the default voice for ordinary conversation or when the appropriate style is ambiguous.",
+  "Choose the most appropriate voice from the configured voices based on the response's emotion and context.",
   "Use an emotional voice when the emotional delivery clearly benefits from it.",
   "If a specific voice is explicitly requested by ID, select that voice.",
   "Always include exactly one voice directive in every response.",
@@ -233,12 +230,6 @@ const lines = [
   "Directive format: [[tts:speakerVoiceId=ID]]",
   "Never select the emergency fallback voice directly.",
 ];
-
-lines.push(
-  defaultVoice
-    ? `Default voice: ${defaultVoice.description}`
-    : `Default voice: configured voice.`,
-);
 
 for (const voice of selectableVoices) {
   lines.push(`${voice.id}: ${voice.description}`);
@@ -335,7 +326,6 @@ export default definePluginEntry({
   );
 
     const provider = new VoicevoxProvider({
-      speaker: voiceConfig.defaultSpeakerId,
       fallbackSpeaker: voiceConfig.fallbackSpeakerId,
       speedScale: config.speedScale,
     });
@@ -352,7 +342,7 @@ export default definePluginEntry({
         );
       const speech = extractSpeech(
         text,
-        voiceConfig.defaultSpeakerId,
+        voiceConfig.fallbackSpeakerId,
         voices,
         speakerId,
       );
@@ -408,7 +398,7 @@ export default definePluginEntry({
 
       const speech = extractSpeech(
         params.message,
-        voiceConfig.defaultSpeakerId,
+        voiceConfig.fallbackSpeakerId,
         voices,
       );
 
@@ -436,7 +426,6 @@ export default definePluginEntry({
 
       return {
         appendSystemContext: buildVoiceInstructions(
-          voiceConfig.defaultSpeakerId,
           voiceConfig.fallbackSpeakerId,
           voices,
         ),
@@ -492,7 +481,7 @@ export default definePluginEntry({
           run = {
             snapshot: "",
             buffer: "",
-            speakerId: selectedSpeakersByRun.get(runId) ?? voiceConfig.defaultSpeakerId,
+            speakerId: selectedSpeakersByRun.get(runId) ?? voiceConfig.fallbackSpeakerId,
             received: false,
           };
           streamingRuns.set(runId, run);
@@ -559,7 +548,7 @@ export default definePluginEntry({
               pendingRuns.delete(runId);
               const speech = extractSpeech(
                 pending.text,
-                voiceConfig.defaultSpeakerId,
+                voiceConfig.fallbackSpeakerId,
                 voices,
                 directiveSpeakerId,
               );
@@ -650,7 +639,7 @@ export default definePluginEntry({
 
         const speech = extractSpeech(
           assistantText,
-          voiceConfig.defaultSpeakerId,
+          voiceConfig.fallbackSpeakerId,
           voices,
           selectedSpeakerId,
         );
