@@ -6,7 +6,7 @@ const PORT = 18790;
 
 const speaker = new TtsSpeaker({
   provider: new VoicevoxProvider({
-    speaker: 1,
+    fallbackSpeaker: 3,
   }),
 });
 
