@@ -5,22 +5,19 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const DEFAULT_SPEED_SCALE = 1.0;
 
 export interface VoicevoxOptions {
-  speaker?: number;
-  fallbackSpeaker?: number;
+  fallbackSpeaker: number;
   baseUrl?: string;
   timeoutMs?: number;
   speedScale?: number;
 }
 
 export class VoicevoxProvider implements TtsProvider {
-  private readonly speaker: number;
-  private readonly fallbackSpeaker?: number;
+  private readonly fallbackSpeaker: number;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
   private readonly speedScale: number;
 
   constructor(options: VoicevoxOptions = {}) {
-    this.speaker = options.speaker ?? 3;
     this.fallbackSpeaker = options.fallbackSpeaker;
     this.baseUrl = options.baseUrl ?? VOICEVOX_URL;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -36,7 +33,7 @@ export class VoicevoxProvider implements TtsProvider {
   }
 
   async synthesize(text: string): Promise<Buffer> {
-    return this.synthesizeWithFallback(text, this.speaker);
+    return this.synthesizeWithFallback(text, this.fallbackSpeaker);
   }
 
   async synthesizeWithSpeaker(
@@ -64,21 +61,21 @@ export class VoicevoxProvider implements TtsProvider {
       );
     } catch (primaryError: unknown) {
       // Emotion or special voice failed: fall back to the configured normal voice.
-      if (speakerId !== this.speaker) {
+      if (speakerId !== this.fallbackSpeaker) {
         try {
           console.error(
-            `[TTS Speaker] speaker ${speakerId} failed, falling back to default speaker ${this.speaker}.`,
+            `[TTS Speaker] speaker ${speakerId} failed, falling back to fallback speaker ${this.fallbackSpeaker}.`,
             primaryError,
           );
 
           return await this.synthesizeUsingSpeaker(
             cleanText,
-            this.speaker,
+            this.fallbackSpeaker,
           );
         } catch (defaultError: unknown) {
           // Continue to the emergency fallback below.
           console.error(
-            `[TTS Speaker] default speaker ${this.speaker} also failed.`,
+            `[TTS Speaker] fallback speaker ${this.fallbackSpeaker} also failed.`,
             defaultError,
           );
         }
@@ -86,8 +83,6 @@ export class VoicevoxProvider implements TtsProvider {
 
       // The normal voice failed, so use the final fallback speaker.
       if (
-        this.fallbackSpeaker !== undefined &&
-        this.fallbackSpeaker !== this.speaker &&
         this.fallbackSpeaker !== speakerId
       ) {
         console.error(
