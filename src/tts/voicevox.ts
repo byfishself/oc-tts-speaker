@@ -17,7 +17,7 @@ export class VoicevoxProvider implements TtsProvider {
   private readonly timeoutMs: number;
   private readonly speedScale: number;
 
-  constructor(options: VoicevoxOptions = {}) {
+  constructor(options: VoicevoxOptions) {
     this.fallbackSpeaker = options.fallbackSpeaker;
     this.baseUrl = options.baseUrl ?? VOICEVOX_URL;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
