@@ -1,5 +1,6 @@
 
 import { VoicevoxProvider } from "./tts/voicevox.js";
+import { DEFAULT_VOICE_CONFIG } from "./tts/config.js";
 import type { TtsProvider } from "./tts/types.js";
 import { playWav } from "./playback/player.js";
 
@@ -56,7 +57,9 @@ export class TtsSpeaker {
   private readonly responseStates = new Map<string, ResponseState>();
 
   constructor(options: TtsSpeakerOptions = {}) {
-    this.tts = options.provider ?? new VoicevoxProvider();
+    this.tts = options.provider ?? new VoicevoxProvider({
+      fallbackSpeaker: DEFAULT_VOICE_CONFIG.fallbackSpeakerId,
+    });
   }
 
   speak(text: string, speakerId?: number): Promise<void> {
