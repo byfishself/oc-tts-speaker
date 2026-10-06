@@ -236,8 +236,8 @@ const lines = [
 
 lines.push(
   defaultVoice
-    ? `Default voice (ID ${defaultVoice.id}): ${defaultVoice.description}`
-    : `Default voice (ID ${defaultSpeakerId}): configured voice.`,
+    ? `Default voice: ${defaultVoice.description}`
+    : `Default voice: configured voice.`,
 );
 
 for (const voice of selectableVoices) {
