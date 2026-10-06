@@ -11,7 +11,6 @@ export interface TtsVoiceDefinition {
 }
 
 export interface TtsVoiceConfig {
-  defaultSpeakerId: number;
   fallbackSpeakerId: number;
   voices: TtsVoiceDefinition[];
 }
@@ -23,7 +22,6 @@ export interface TtsSpeakerConfig {
 }
 
 export const DEFAULT_VOICE_CONFIG: TtsVoiceConfig = {
-  defaultSpeakerId: 102,
   fallbackSpeakerId: 3,
   voices: [
     {
@@ -84,10 +82,6 @@ function isValidVoiceConfig(value: unknown): value is TtsVoiceConfig {
   const config = value as Partial<TtsVoiceConfig>;
 
   return (
-    (config.defaultSpeakerId === undefined ||
-      (typeof config.defaultSpeakerId === "number" &&
-        Number.isInteger(config.defaultSpeakerId) &&
-        config.defaultSpeakerId >= 0)) &&
     typeof config.fallbackSpeakerId === "number" &&
     Number.isInteger(config.fallbackSpeakerId) &&
     config.fallbackSpeakerId >= 0 &&
@@ -99,17 +93,12 @@ function isValidVoiceConfig(value: unknown): value is TtsVoiceConfig {
 export function resolveVoiceConfig(rawConfig: unknown): TtsVoiceConfig {
   if (!isValidVoiceConfig(rawConfig)) {
     return {
-      defaultSpeakerId: DEFAULT_VOICE_CONFIG.defaultSpeakerId,
       fallbackSpeakerId: DEFAULT_VOICE_CONFIG.fallbackSpeakerId,
       voices: DEFAULT_VOICE_CONFIG.voices.map((voice) => ({ ...voice })),
     };
   }
 
   return {
-    defaultSpeakerId:
-      typeof rawConfig.defaultSpeakerId === "number"
-        ? rawConfig.defaultSpeakerId
-        : DEFAULT_VOICE_CONFIG.defaultSpeakerId,
     fallbackSpeakerId: rawConfig.fallbackSpeakerId,
     voices: rawConfig.voices.map((voice) => ({ ...voice })),
   };
